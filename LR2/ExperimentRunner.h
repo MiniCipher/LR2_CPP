@@ -27,4 +27,7 @@ public:
     void run_optimization_comparison();
 
     void run_all_experiments();
+
+    void run_data_size_comparison();
+
 };
