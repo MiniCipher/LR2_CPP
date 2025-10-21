@@ -3,7 +3,6 @@
 #include <iomanip>
 #include <algorithm>
 #include <thread>
-#include <fstream>
 
 void ExperimentRunner::print_k_results_table(const std::vector<std::pair<size_t, double>>& results,
     double sequential_time) {
@@ -35,30 +34,9 @@ void ExperimentRunner::analyze_k_performance(const std::vector<std::pair<size_t,
 
 size_t ExperimentRunner::calculate_max_k(size_t data_size) {
     unsigned int hardware_threads = std::thread::hardware_concurrency();
-    size_t suggested_k = static_cast<size_t>(hardware_threads) * 4;
+    size_t suggested_k = static_cast<size_t>(hardware_threads) * 3; // Зменшимо для стабільності
     size_t max_k = (suggested_k < data_size) ? suggested_k : data_size;
     return std::max(max_k, size_t(1));
-}
-
-void ExperimentRunner::run_data_size_comparison() {
-    std::cout << "\n" << std::string(60, '=') << std::endl;
-    std::cout << "DATA SIZE COMPARISON" << std::endl;
-    std::cout << std::string(60, '=') << std::endl;
-
-    std::vector<size_t> sizes = { 1000, 10000, 100000, 500000, 1000000 };
-
-    for (size_t size : sizes) {
-        std::cout << "\n*** Data Size: " << size << " ***" << std::endl;
-
-        auto data = generator.generate_doubles(size);
-        std::vector<double> output;
-
-        benchmark.test_standard_transform(data, output,
-            TransformOperations::fast_operation, "Fast Operation");
-
-        benchmark.test_standard_transform(data, output,
-            TransformOperations::slow_operation, "Slow Operation");
-    }
 }
 
 void ExperimentRunner::run_k_experiment(const std::string& experiment_name) {
@@ -66,28 +44,27 @@ void ExperimentRunner::run_k_experiment(const std::string& experiment_name) {
     std::cout << "K EXPERIMENT: " << experiment_name << std::endl;
     std::cout << std::string(60, '=') << std::endl;
 
-    std::vector<size_t> sizes = { 100000, 1000000 };
+    // Тестуємо з одним розміром даних для початку
+    size_t size = 1000000;
+    std::cout << "\n--- Data Size: " << size << " ---" << std::endl;
+    std::cout << "Hardware threads: " << std::thread::hardware_concurrency() << std::endl;
 
-    for (size_t size : sizes) {
-        std::cout << "\n--- Data Size: " << size << " ---" << std::endl;
-        std::cout << "Hardware threads: " << std::thread::hardware_concurrency() << std::endl;
+    auto data = generator.generate_doubles(size);
+    std::vector<double> output;
 
-        auto data = generator.generate_doubles(size);
-        std::vector<double> output;
+    size_t max_k = calculate_max_k(size);
+    std::cout << "Testing K from 1 to " << max_k << std::endl;
 
-        size_t max_k = calculate_max_k(size);
-        std::cout << "Testing K from 1 to " << max_k << std::endl;
+    // Використовуємо повільну операцію для кращої демонстрації паралелізації
+    auto slow_op = [](double x) {
+        return std::sin(x) * std::cos(x) + std::log(std::abs(x) + 1.0);
+        };
 
-        auto slow_op = [](double x) {
-            return std::sin(x) * std::cos(x) + std::log(std::abs(x) + 1.0);
-            };
+    auto results = benchmark.measure_k_performance(data, output, slow_op, max_k);
+    double sequential_time = results[0].second;
 
-        auto results = benchmark.measure_k_performance(data, output, slow_op, max_k);
-        double sequential_time = results[0].second;
-
-        print_k_results_table(results, sequential_time);
-        analyze_k_performance(results, sequential_time);
-    }
+    print_k_results_table(results, sequential_time);
+    analyze_k_performance(results, sequential_time);
 }
 
 void ExperimentRunner::run_comprehensive_test(const std::string& test_name) {
@@ -101,12 +78,15 @@ void ExperimentRunner::run_comprehensive_test(const std::string& test_name) {
     auto double_data = generator.generate_doubles(size);
     std::vector<double> double_output;
 
+    // Test 1: Fast operation
     benchmark.test_standard_transform(double_data, double_output,
         TransformOperations::fast_operation, "Double Fast Operation");
 
+    // Test 2: Slow operation
     benchmark.test_standard_transform(double_data, double_output,
         TransformOperations::slow_operation, "Double Slow Operation");
 
+    // Verify correctness
     benchmark.verify_correctness(double_data, TransformOperations::fast_operation);
 }
 
@@ -115,24 +95,23 @@ void ExperimentRunner::run_optimization_comparison() {
     std::cout << "OPTIMIZATION LEVEL COMPARISON" << std::endl;
     std::cout << std::string(60, '=') << std::endl;
 
-    std::cout << "Note: This test should be compiled with different optimization flags:" << std::endl;
-    std::cout << "- O0 (no optimization)" << std::endl;
-    std::cout << "- O2 (standard optimization)" << std::endl;
-    std::cout << "- O3 (maximum optimization)" << std::endl;
+    std::cout << "Note: This test demonstrates optimization impact on small vs large data:" << std::endl;
 
-    std::cout << "\nDemonstrating optimization impact on different data sizes:" << std::endl;
-
+    // Тест на малих даних
     auto small_data = generator.generate_doubles(1000);
     std::vector<double> small_output;
+
     std::cout << "\n--- Small Data (1000 elements) ---" << std::endl;
     benchmark.test_standard_transform(small_data, small_output,
-        TransformOperations::fast_operation, "Fast Operation");
+        TransformOperations::fast_operation, "Fast Operation - Small Data");
 
+    // Тест на великих даних
     auto large_data = generator.generate_doubles(1000000);
     std::vector<double> large_output;
+
     std::cout << "\n--- Large Data (1,000,000 elements) ---" << std::endl;
     benchmark.test_standard_transform(large_data, large_output,
-        TransformOperations::slow_operation, "Slow Operation");
+        TransformOperations::slow_operation, "Slow Operation - Large Data");
 }
 
 void ExperimentRunner::run_all_experiments() {
@@ -141,7 +120,6 @@ void ExperimentRunner::run_all_experiments() {
     std::cout << "Hardware threads: " << std::thread::hardware_concurrency() << std::endl;
     std::cout << "Build: RELEASE" << std::endl;
 
-    run_data_size_comparison();
     run_comprehensive_test("Standard Policies Comparison");
     run_k_experiment("Parallel Thread Count Optimization");
     run_optimization_comparison();
@@ -149,5 +127,4 @@ void ExperimentRunner::run_all_experiments() {
     std::cout << "\n" << std::string(60, '=') << std::endl;
     std::cout << "ALL EXPERIMENTS COMPLETED SUCCESSFULLY" << std::endl;
     std::cout << std::string(60, '=') << std::endl;
-
 }

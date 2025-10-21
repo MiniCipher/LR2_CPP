@@ -44,6 +44,7 @@ void TransformBenchmark::test_standard_transform(const std::vector<T>& input, st
         std::cout << "WARNING: par_unseq not supported: " << e.what() << std::endl;
     }
 
+    // Output results
     print_result_line("Sequenced", seq_time, 1.0);
     print_result_line("Parallel", par_time, seq_time / par_time);
 
@@ -68,6 +69,7 @@ void TransformBenchmark::custom_parallel_transform(const std::vector<T>& input, 
     std::vector<std::future<void>> futures;
     size_t chunk_size = input.size() / K;
 
+    // Launch asynchronous tasks for each chunk
     for (size_t i = 0; i < K; ++i) {
         size_t start = i * chunk_size;
         size_t end = (i == K - 1) ? input.size() : (i + 1) * chunk_size;
@@ -79,6 +81,7 @@ void TransformBenchmark::custom_parallel_transform(const std::vector<T>& input, 
             }));
     }
 
+    // Wait for all tasks to complete
     for (auto& future : futures) {
         future.get();
     }
@@ -106,7 +109,7 @@ bool TransformBenchmark::verify_correctness(const std::vector<T>& input, Func op
     std::vector<T> par_output(input.size());
     std::vector<T> custom_output(input.size());
 
-    // Sequential version
+    // Sequential version (reference)
     std::transform(std::execution::seq, input.begin(), input.end(), seq_output.begin(), operation);
 
     // Parallel version

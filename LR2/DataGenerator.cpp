@@ -2,6 +2,7 @@
 #include <algorithm>
 
 DataGenerator::DataGenerator() : gen(rd()) {
+    // Ініціалізація генератора з випадковим seed
 }
 
 std::vector<double> DataGenerator::generate_doubles(size_t size, double min, double max) {
