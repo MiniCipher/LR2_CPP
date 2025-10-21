@@ -9,7 +9,6 @@ int main() {
         std::cout << "C++ Standard: C++20" << std::endl;
         std::cout << "Build: RELEASE" << std::endl;
 
-        // Запуск всіх експериментів
         runner.run_all_experiments();
 
     }

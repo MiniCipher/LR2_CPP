@@ -34,7 +34,7 @@ void ExperimentRunner::analyze_k_performance(const std::vector<std::pair<size_t,
 
 size_t ExperimentRunner::calculate_max_k(size_t data_size) {
     unsigned int hardware_threads = std::thread::hardware_concurrency();
-    size_t suggested_k = static_cast<size_t>(hardware_threads) * 3; // Зменшимо для стабільності
+    size_t suggested_k = static_cast<size_t>(hardware_threads) * 3;
     size_t max_k = (suggested_k < data_size) ? suggested_k : data_size;
     return std::max(max_k, size_t(1));
 }
@@ -44,7 +44,6 @@ void ExperimentRunner::run_k_experiment(const std::string& experiment_name) {
     std::cout << "K EXPERIMENT: " << experiment_name << std::endl;
     std::cout << std::string(60, '=') << std::endl;
 
-    // Тестуємо з одним розміром даних для початку
     size_t size = 1000000;
     std::cout << "\n--- Data Size: " << size << " ---" << std::endl;
     std::cout << "Hardware threads: " << std::thread::hardware_concurrency() << std::endl;
@@ -55,7 +54,6 @@ void ExperimentRunner::run_k_experiment(const std::string& experiment_name) {
     size_t max_k = calculate_max_k(size);
     std::cout << "Testing K from 1 to " << max_k << std::endl;
 
-    // Використовуємо повільну операцію для кращої демонстрації паралелізації
     auto slow_op = [](double x) {
         return std::sin(x) * std::cos(x) + std::log(std::abs(x) + 1.0);
         };
@@ -78,15 +76,14 @@ void ExperimentRunner::run_comprehensive_test(const std::string& test_name) {
     auto double_data = generator.generate_doubles(size);
     std::vector<double> double_output;
 
-    // Test 1: Fast operation
+    //Fast operation
     benchmark.test_standard_transform(double_data, double_output,
         TransformOperations::fast_operation, "Double Fast Operation");
 
-    // Test 2: Slow operation
+    //Slow operation
     benchmark.test_standard_transform(double_data, double_output,
         TransformOperations::slow_operation, "Double Slow Operation");
 
-    // Verify correctness
     benchmark.verify_correctness(double_data, TransformOperations::fast_operation);
 }
 
@@ -97,7 +94,6 @@ void ExperimentRunner::run_optimization_comparison() {
 
     std::cout << "Note: This test demonstrates optimization impact on small vs large data:" << std::endl;
 
-    // Тест на малих даних
     auto small_data = generator.generate_doubles(1000);
     std::vector<double> small_output;
 
@@ -105,7 +101,6 @@ void ExperimentRunner::run_optimization_comparison() {
     benchmark.test_standard_transform(small_data, small_output,
         TransformOperations::fast_operation, "Fast Operation - Small Data");
 
-    // Тест на великих даних
     auto large_data = generator.generate_doubles(1000000);
     std::vector<double> large_output;
 
